@@ -54,8 +54,8 @@ while cap.isOpened():
     # Run YOLO Pose
     results = model(frame, verbose=False)
     
-    # Visualize the skeleton on the frame automatically
-    annotated_frame = results[0].plot()
+    # Start with the raw frame; we'll draw only the arm overlay
+    annotated_frame = frame.copy()
     
     # Extract Keypoints
     # YOLO Pose returns keypoints for all people detected
@@ -82,13 +82,21 @@ while cap.isOpened():
 
         if use_left:
             shoulder, elbow, wrist = left_pts
-            arm_label = "L"
         else:
             shoulder, elbow, wrist = right_pts
-            arm_label = "R"
 
         # Calculate the angle
         angle = calculate_angle(shoulder, elbow, wrist)
+
+        # Draw only the arm (no face/eyes overlay)
+        s = tuple(np.array(shoulder, dtype=int))
+        e = tuple(np.array(elbow, dtype=int))
+        w = tuple(np.array(wrist, dtype=int))
+        cv2.line(annotated_frame, s, e, (0, 255, 0), 3)
+        cv2.line(annotated_frame, e, w, (0, 255, 0), 3)
+        cv2.circle(annotated_frame, s, 6, (0, 255, 0), -1)
+        cv2.circle(annotated_frame, e, 6, (0, 255, 0), -1)
+        cv2.circle(annotated_frame, w, 6, (0, 255, 0), -1)
 
         # Visualizing the Angle
         cv2.putText(annotated_frame, f"{int(angle)} deg", 
@@ -123,11 +131,6 @@ while cap.isOpened():
     cv2.putText(annotated_frame, stage_text, (60,60), 
                 cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
-    # Arm Data (L/R)
-    cv2.putText(annotated_frame, 'ARM', (155,12), 
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
-    cv2.putText(annotated_frame, arm_label, (155,60), 
-                cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
     # Show it
     cv2.imshow('AI Gym Trainer', annotated_frame)
