@@ -24,8 +24,8 @@ cap = cv2.VideoCapture(0)
 
 # Tuning knobs
 CONF_THRESH = 0.30
-DOWN_ANGLE = 150
-UP_ANGLE = 60
+DOWN_ANGLE = 165
+UP_ANGLE = 45
 
 # Helper: pick an arm with enough keypoint confidence
 def get_arm_points(kpts_xy, kpts_conf, side):
@@ -116,7 +116,7 @@ while cap.isOpened():
         pass
         
     # Draw the Scoreboard
-    cv2.rectangle(annotated_frame, (0,0), (225,73), (245,117,16), -1)
+    cv2.rectangle(annotated_frame, (0,0), (260,73), (245,117,16), -1)
     
     # Rep Data
     cv2.putText(annotated_frame, 'REPS', (15,12), 
@@ -125,10 +125,10 @@ while cap.isOpened():
                 cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
     
     # Stage Data (Up/Down)
-    cv2.putText(annotated_frame, 'STAGE', (65,12), 
+    cv2.putText(annotated_frame, 'STAGE', (120,12), 
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
     stage_text = stage if stage else "--"
-    cv2.putText(annotated_frame, stage_text, (60,60), 
+    cv2.putText(annotated_frame, stage_text, (115,60), 
                 cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
 
