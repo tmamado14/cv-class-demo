@@ -39,24 +39,17 @@ while True:
         confidence = float(box.conf[0])
 
         # Filter: Only trust detections with > 50% confidence
-        if confidence > 0.5:
+        if confidence > 0.5 and class_name == 'cell phone':
             # Get coordinates for the box
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
-            # DEFAULT COLOR: Green
-            color = (0, 255, 0) 
-            label = f"{class_name} {confidence:.2f}"
-
-            # 5. THE LOGIC
-            # If the AI sees a cell phone, change everything to RED and ALERT
-            if class_name == 'cell phone':
-                cheating_detected = True
-                color = (0, 0, 255) # Red (BGR format)
-                label = "STOP! NO PHONES!"
-                
-                # Add extra warning text on screen
-                cv2.putText(frame, "PHONE DETECTED!", (50, 50), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+            cheating_detected = True
+            color = (0, 0, 255) # Red (BGR format)
+            label = "STOP! NO PHONES!"
+            
+            # Add extra warning text on screen
+            cv2.putText(frame, "PHONE DETECTED!", (50, 50), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
             # Draw the box and text
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
