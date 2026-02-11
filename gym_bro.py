@@ -3,15 +3,18 @@ import numpy as np
 from ultralytics import YOLO
 
 # 1. Load the YOLOv8 Pose Model (It detects skeletons!)
-print("Loading AI Gym Bro... (Wait lang sor)")
-model = YOLO('yolov8n-pose.pt') 
+# Pose models return body keypoints (joints) instead of just boxes.
+print("Loading AI Gym Bro...")
+model = YOLO('yolov8n-pose.pt')
 
 # Helper Function: Calculate angle between three points
+# We use the shoulder-elbow-wrist angle to detect a bicep curl.
 def calculate_angle(a, b, c):
     a = np.array(a) # Shoulder
     b = np.array(b) # Elbow
     c = np.array(c) # Wrist
     
+    # arctan2 gives the angle of a vector, subtract to get joint angle
     radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
     angle = np.abs(radians*180.0/np.pi)
     
@@ -22,12 +25,13 @@ def calculate_angle(a, b, c):
 
 cap = cv2.VideoCapture(0)
 
-# Tuning knobs
+# Tuning knobs (you can tweak these for different people/cameras)
 CONF_THRESH = 0.30
 DOWN_ANGLE = 165
 UP_ANGLE = 45
 
 # Helper: pick an arm with enough keypoint confidence
+# YOLO returns keypoints with a confidence score for each joint.
 def get_arm_points(kpts_xy, kpts_conf, side):
     if side == "left":
         idxs = (5, 7, 9)  # L_Shoulder, L_Elbow, L_Wrist
@@ -51,7 +55,7 @@ while cap.isOpened():
     if not ret:
         break
         
-    # Run YOLO Pose
+    # Run YOLO Pose on the current frame
     results = model(frame, verbose=False)
     
     # Start with the raw frame; we'll draw only the arm overlay
@@ -68,6 +72,7 @@ while cap.isOpened():
         kpts_xy = kpts.xy[0]
         kpts_conf = kpts.conf[0]
 
+        # Try both arms, then choose the one with higher confidence
         left_pts, left_conf = get_arm_points(kpts_xy, kpts_conf, "left")
         right_pts, right_conf = get_arm_points(kpts_xy, kpts_conf, "right")
 
@@ -85,7 +90,7 @@ while cap.isOpened():
         else:
             shoulder, elbow, wrist = right_pts
 
-        # Calculate the angle
+        # Calculate the elbow angle (bicep curl motion)
         angle = calculate_angle(shoulder, elbow, wrist)
 
         # Draw only the arm (no face/eyes overlay)
@@ -98,12 +103,13 @@ while cap.isOpened():
         cv2.circle(annotated_frame, e, 6, (0, 255, 0), -1)
         cv2.circle(annotated_frame, w, 6, (0, 255, 0), -1)
 
-        # Visualizing the Angle
+        # Visualizing the Angle (helps debug the thresholds)
         cv2.putText(annotated_frame, f"{int(angle)} deg", 
                            tuple(np.multiply(elbow, [1, 1]).astype(int)), 
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
         # --- THE REP COUNTING LOGIC ---
+        # If arm is extended (down) then later curls (up), count a rep.
         if angle > DOWN_ANGLE:
             stage = "down"
         if angle < UP_ANGLE and stage == "down":

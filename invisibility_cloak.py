@@ -16,7 +16,8 @@ def build_person_mask(result, frame_shape):
     if masks.data is None or boxes.cls is None:
         return None
 
-    mask_data = masks.data  # shape: (n, h, w)
+    # masks.data is a tensor of per-object masks: shape (n, h, w)
+    mask_data = masks.data
     if mask_data.numel() == 0:
         return None
 
@@ -27,7 +28,7 @@ def build_person_mask(result, frame_shape):
         return None
 
     # Combine all person masks into a single mask
-    # masks.data is float tensor [0..1]; threshold to binary
+    # masks.data is float tensor [0..1]; threshold to binary (0 or 255)
     combined = None
     for idx in person_idxs:
         m = mask_data[idx].detach().cpu().numpy()
@@ -49,11 +50,13 @@ def main():
     print("Loading Invisibility Cloak (YOLOv8-Seg)...")
     model = YOLO("yolov8n-seg.pt")
 
+    # Open webcam (0 is the default camera)
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Error: Unable to open webcam.")
         return
 
+    # We capture a clean background frame, then replace the person with it
     background = None
 
     while cap.isOpened():
@@ -61,6 +64,7 @@ def main():
         if not ret:
             break
 
+        # Start by displaying the live frame
         display = frame.copy()
 
         # Calibration state: show instructions until background is captured
@@ -97,13 +101,16 @@ def main():
 
         cv2.imshow("Invisibility Cloak", display)
 
+        # Listen for keys each frame
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             break
         if key == ord("b"):
+            # Save current frame as the "empty room" background
             background = frame.copy()
             print("Background captured.")
 
+    # Cleanup
     cap.release()
     cv2.destroyAllWindows()
 
